@@ -10,14 +10,16 @@ components and the coal in an inital state.
 import numpy as np
 import random as rand
 
-# Generate an n x n matrix of randomly placed molecules
-# with a user-defined distrubution ratio.
-# We will define "molecules" as a phenol, a coal molecule, 
-# and, although not a physical object, an empty space.
-# All of these "molecules" will be of comparable size for
-# simplicity.
-
 def initial_random_matrix(n, ratio):
+
+    """
+    Generate an n x n matrix of randomly placed molecules
+    with a user-defined distrubution ratio.
+    We will define "molecules" as a phenol, a coal molecule, 
+    and, although not a physical object, an empty space.
+    All of these "molecules" will be of comparable size for
+    simplicity.
+    """
 
     state = np.zeros((n, n))
 
@@ -36,8 +38,20 @@ def initial_random_matrix(n, ratio):
     phenol_ratio = ratio[1]
     coal_ratio = ratio[2]
 
+    # Randomize each cell of the state matrix according to the 
+    # user-defined ratio:
 
-
+    for i in range(n):
+        for j in range(n):
+            r = rand.randint(1, void_ratio + phenol_ratio + coal_ratio)
+            if r <= void_ratio:
+                state[i][j] = 0
+            elif r <= void_ratio + phenol_ratio:
+                state[i][j] = 1
+            else:
+                state[i][j] = 2
+    
+    return state
 
 
 # Define and get the rates of each event occuring the system based on the
