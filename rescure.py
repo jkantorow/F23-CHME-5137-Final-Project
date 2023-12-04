@@ -69,15 +69,28 @@ def get_rates(params):
 
     # Reaction events:
 
+    # KMC rate of phenol reacting with another phenol:
+    # I think we can determine this rate mostly using the
+    # structure of the molecules interacting and the
+    # reaction rate constant (theoretically).
+
     rate_res_cures_alone = PLACEHOLDER
+
+    # KMC rate of phenol reacting with coal:
+
     rate_res_cures_with_coal = PLACEHOLDER
-    rate_no_rxn = PLACEHOLDER # This one might be tricky.
+
+    # KMC rate of no reaction occuring:
+
+    rate_no_rxn = PLACEHOLDER
 
     # Translocation events (could nix this if
     # the system gets too complicated):
 
     # Getting rid of the swapping problem could
-    # make this much simpler.
+    # make this much simpler, also Adam suggests
+    # compiling all of these rates into one "
+    # movement" rate.
 
     rate_mol_moves_NW = PLACEHOLDER
     rate_mol_moves_N = PLACEHOLDER
