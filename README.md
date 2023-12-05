@@ -22,3 +22,4 @@ We could use this space for fleshing out our intro and devising up work if that 
 * Make representative graphic of phenol-coal reaction.
 * Make a representative graphic of each "event" happening
 * Make a logic tree (flow chart) of the pseudocode we are using.
+* Create a graphic of the states of the system over computational time formatted as heat maps of each molecule "crosslinking" in space.
