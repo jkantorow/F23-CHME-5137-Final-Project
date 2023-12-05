@@ -101,6 +101,14 @@ def get_rates(params):
     rate_mol_moves_SW = PLACEHOLDER
     rate_mol_moves_W = PLACEHOLDER
 
+
+    # We need the output of the crosslinking degree
+    # depending on the molecular weight and the
+    # involved functional group of the molecule.
+    # We can keep track of every time a crosslinking
+    # event occurs and then represent this value as a ratio
+    # of the total number of molecules in the system.
+
     return (rate_res_cures_alone,
             rate_res_cures_with_coal,
             rate_no_rxn,
