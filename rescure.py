@@ -57,13 +57,66 @@ def initial_random_matrix(n, ratio):
 # Define and get the rates of each event occuring the system based on the
 # input parameters:
 
-def get_rates(params):
+def get_rates(grid, mol_type, pos):
 
     """
     We don't necessarily know what the rates should be for each of these
     events; for now we use a place holder to indicate that we need to 
     update this.
+
+    We need to determine what the input parameters should be
+    to describe each molecule of the system (we can change these as needed):
+
+    grid     : numpy array - the current state of the system.
+
+    mol_type : float - the type of molecule in the system (1, or 2);
+             : all information about the molecule can be stored in this
+             : function and used to determine the rates of each event.
+
+    pos      : tuple - the position of the molecule in the matrix; this
+             : is used to find the identification of the peripheral molecules
+             : in the immediate vicinity of the current molecule.
+
+             molecule i,j and its immediate periphery molecules can be
+             thought of as follows where i=rows and j=columns:
+
+             (i-1,j-1) (i-1,j  ) (i-1,j+1)
+
+             (i  ,j-1) (i  ,j  ) (i  ,j+1)
+
+             (i+1,j-1) (i+1,j  ) (i+1,j+1)
+
     """
+
+    # Get identities and positions of each peripheral molecule:
+    # by using a 3x3 mask:
+
+    x, y = pos
+    periphery = []
+
+    for i in range(x-1, x+2):
+        for j in range(y-1, y+2):
+            periphery.append(grid[i][j])
+
+    periphery = np.array(periphery).reshape(3, 3)
+
+    # Calculate the rate of each event occuring based
+    # on a huge if else tree:
+
+    # If mol_type is a phenol:
+
+    if mol_type == 1:
+
+        for i in range(3):
+            for j in range(3):
+
+                # if (i, j) is the central molecule, skip it:
+
+                if i == x and j == y:
+                    continue
+
+                elif periphery[i, j] == 1:
+                    PLACEHOLDER # NEED EDIT
 
     PLACEHOLDER = None
 
@@ -91,6 +144,11 @@ def get_rates(params):
     # make this much simpler, also Adam suggests
     # compiling all of these rates into one "
     # movement" rate.
+
+    # To do this let's define a singular rate
+    # of a movement event occuring:
+
+    rate_mol_moves = PLACEHOLDER
 
     rate_mol_moves_NW = PLACEHOLDER
     rate_mol_moves_N = PLACEHOLDER
