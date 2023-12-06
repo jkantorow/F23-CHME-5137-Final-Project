@@ -4,7 +4,9 @@ phenolic resin curing in the presence of coal catalyzed by heat.
 
 We are thinking of using a polymer ising model with kinetic Monte Carlo to
 simulate the curing process. We will use a lattice to represent the polymer
-components and the coal in an inital state.
+components and the coal in an inital state. This lattice will represent a 
+cross-section of the system to capture the process of cross-linking.
+
 """
 
 import numpy as np
@@ -19,6 +21,14 @@ def initial_random_matrix(n, ratio):
     and, although not a physical object, an empty space.
     All of these "molecules" will be of comparable size for
     simplicity.
+
+    It's important to recognize that the 2D plane of this
+    matrix represents the perpendicular cross section of
+    multiple parallel resin polymers in close (angstroms)
+    proximity and therefore the crosslinking of phenol /
+    coal residues in the same perpendicular plane yet
+    on different polymer chains.
+
     """
 
     state = np.zeros((n, n))
