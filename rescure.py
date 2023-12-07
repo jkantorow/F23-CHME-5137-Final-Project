@@ -119,6 +119,9 @@ def get_rates(state, T, mol_type, pos):
 
     periphery = np.array(periphery).reshape(3, 3)
 
+    """
+    QUARENTINE: Method may be way too complicated to implement
+
     # Calculate the rate of each event occuring based
     # on a huge if else tree:
 
@@ -190,7 +193,7 @@ def get_rates(state, T, mol_type, pos):
 
                     total_rate_no_rxn += (1/8)
                     
-                    
+                    """
 
     PLACEHOLDER = None
 
