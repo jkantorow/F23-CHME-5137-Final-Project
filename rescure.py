@@ -117,23 +117,35 @@ def get_rates(state, T, mol_type, pos):
     # Calculate the rate of each event occuring based
     # on a huge if else tree:
 
+    # Set up dummy reaction constants for phenol
+    # and coalin different positions:
+
+    k_para_phenol = 0.034
+    k_ortho_phenol = 0.063
+
+    k_para_coal = 0.24
+    k_ortho_coal = 0.45
+
+    # Define the probabilities of each reaction
+    # occuring (fixed for now):
+
+    p_para_phenol = 0.63
+    p_ortho_phenol = 0.37
+
+    p_para_coal = 0.15
+    p_ortho_coal = 0.85
+
+    # Define the total chance that a crosslinking reaction
+    # occurs depending on the types of peripheral molecules:
+
+    total_curing_rate_phenol = 0
+    total_curing_rate_coal = 0
+
     # If mol_type is a phenol:
 
     if mol_type == 1:
 
-        # Set up dummy reaction constants for phenol
-        # in different positions:
-
-        k_para = 0.034
-        k_ortho = 0.063
-
-        # Define the probabilities of each reaction
-        # occuring (fixed for now):
-
-        p_para = 0.63
-        p_ortho = 0.37
-
-        total_curing_rate = 0
+        # For each peripheral molecule:
 
         for i in range(3):
 
@@ -147,12 +159,25 @@ def get_rates(state, T, mol_type, pos):
 
                 elif periphery[i, j] == 1:
 
-                    # Randomly choose between k_ortho and k_para
+                    # Randomly choose between k_ortho_phenol and k_para_phenol
                     # based on their respective probabilities of 
                     # occuring:
 
-                    k = rand.choices([k_ortho, k_para], [p_ortho, p_para])
-                    total_curing_rate += (1/8)*k
+                    k = rand.choices([k_ortho_phenol, k_para_phenol], [p_ortho_phenol, p_para_phenol])
+
+                    # Add the partial rate contribution for each
+                    # peripheral molecule if is a phenol:
+
+                    total_curing_rate_phenol += (1/8)*k
+
+                elif periphery[i, j] == 2:
+                        
+                        k = rand.choices([k_ortho_coal, k_para_coal], [p_ortho_coal, p_para_coal])
+                        total_curing_rate_coal += (1/8)*k # NEED EDIT
+
+                elif periphery[i, j] == 0:
+
+                    continue # NEED EDIT
                     
                     
 
