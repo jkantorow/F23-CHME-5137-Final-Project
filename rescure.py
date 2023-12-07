@@ -40,6 +40,11 @@ def initial_random_matrix(n, ratio):
         1 : "phenol",
         2 : "coal"
     }
+
+    # It is important to note that more numbers can be used
+    # to represent crosslinked phenol molecules once the
+    # simulation is run, although we do not start with any
+    # crosslinked molecules in the initial state.
     
     # Ratio of empty space to phenol to coal in the form
     # (x:y:z) where x, y, and z are integers:
@@ -136,10 +141,12 @@ def get_rates(state, T, mol_type, pos):
     p_ortho_coal = 0.85
 
     # Define the total chance that a crosslinking reaction
-    # occurs depending on the types of peripheral molecules:
+    # occurs depending on the types of peripheral molecules
+    # or the chance that no reaction occurs at all (fixed for now):
 
     total_curing_rate_phenol = 0
     total_curing_rate_coal = 0
+    total_rate_no_rxn = 0
 
     # If mol_type is a phenol:
 
@@ -172,12 +179,16 @@ def get_rates(state, T, mol_type, pos):
 
                 elif periphery[i, j] == 2:
                         
-                        k = rand.choices([k_ortho_coal, k_para_coal], [p_ortho_coal, p_para_coal])
-                        total_curing_rate_coal += (1/8)*k # NEED EDIT
+                    k = rand.choices([k_ortho_coal, k_para_coal], [p_ortho_coal, p_para_coal])
+                    total_curing_rate_coal += (1/8)*k # NEED EDIT
 
-                elif periphery[i, j] == 0:
+                else:
 
-                    continue # NEED EDIT
+                    # If the peripheral molecule is empty 
+                    # or already crosslinked, add to the 
+                    # rate that no reaction occurs:
+
+                    total_rate_no_rxn += (1/8)
                     
                     
 
