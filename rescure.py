@@ -67,7 +67,7 @@ def initial_random_matrix(n, ratio):
 # Define and get the rates of each event occuring the system based on the
 # input parameters:
 
-def get_rates(grid, mol_type, pos):
+def get_rates(state, T, mol_type, pos):
 
     """
     We don't necessarily know what the rates should be for each of these
@@ -77,7 +77,11 @@ def get_rates(grid, mol_type, pos):
     We need to determine what the input parameters should be
     to describe each molecule of the system (we can change these as needed):
 
-    grid     : numpy array - the current state of the system.
+    state    : numpy array - the current state of the system in matrix
+             : format.
+
+    T        : float - the temperature of the molecule (same as the temperature
+             : of the whole system in our case).
 
     mol_type : float - the type of molecule in the system (1, or 2);
              : all information about the molecule can be stored in this
@@ -87,14 +91,14 @@ def get_rates(grid, mol_type, pos):
              : is used to find the identification of the peripheral molecules
              : in the immediate vicinity of the current molecule.
 
-             molecule i,j and its immediate periphery molecules can be
+             molecule i,j and its immediate peripheral molecules can be
              thought of as follows where i=rows and j=columns:
 
-             (i-1,j-1) (i-1,j  ) (i-1,j+1)
+             (i-1,j-1) (i-1, j ) (i-1,j+1)
 
-             (i  ,j-1) (i  ,j  ) (i  ,j+1)
+             ( i ,j-1) ( i , j ) ( i ,j+1)
 
-             (i+1,j-1) (i+1,j  ) (i+1,j+1)
+             (i+1,j-1) (i+1, j ) (i+1,j+1)
 
     """
 
@@ -106,7 +110,7 @@ def get_rates(grid, mol_type, pos):
 
     for i in range(x-1, x+2):
         for j in range(y-1, y+2):
-            periphery.append(grid[i][j])
+            periphery.append(state[i][j])
 
     periphery = np.array(periphery).reshape(3, 3)
 
@@ -117,16 +121,40 @@ def get_rates(grid, mol_type, pos):
 
     if mol_type == 1:
 
+        # Set up dummy reaction constants for phenol
+        # in different positions:
+
+        k_para = 0.034
+        k_ortho = 0.063
+
+        # Define the probabilities of each reaction
+        # occuring (fixed for now):
+
+        p_para = 0.63
+        p_ortho = 0.37
+
+        total_curing_rate = 0
+
         for i in range(3):
+
             for j in range(3):
 
                 # if (i, j) is the central molecule, skip it:
 
                 if i == x and j == y:
+
                     continue
 
                 elif periphery[i, j] == 1:
-                    PLACEHOLDER # NEED EDIT
+
+                    # Randomly choose between k_ortho and k_para
+                    # based on their respective probabilities of 
+                    # occuring:
+
+                    k = rand.choices([k_ortho, k_para], [p_ortho, p_para])
+                    total_curing_rate += (1/8)*k
+                    
+                    
 
     PLACEHOLDER = None
 
