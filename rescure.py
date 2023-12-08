@@ -256,3 +256,66 @@ def get_rates(state, T, mol_type, pos):
             rate_mol_moves_SW,
             rate_mol_moves_W)
 
+# Let's define a simpler function to get the rates
+# of each event that only tracks a molecule's movement
+# through the 2D space:
+
+def get_rates_simplified(state, pos):
+
+    """
+    A function that returns the rates of the molecular
+    motion of a molecule through the system in each
+    of eight directions.
+    
+    state   : numpy array - the current state of the system in matrix
+            : format.
+
+    pos     : tuple - the position of the molecule in the matrix; this
+            : is used to find the identification of the peripheral molecules
+            : in the immediate vicinity of the current molecule.
+
+            molecule i,j and its immediate peripheral molecules can be
+            thought of as follows where i=rows and j=columns:
+
+            (i-1,j-1) (i-1, j ) (i-1,j+1)
+
+            ( i ,j-1) ( i , j ) ( i ,j+1)
+
+            (i+1,j-1) (i+1, j ) (i+1,j+1)
+
+    """
+
+    # Get identities and positions of each peripheral molecule:
+    # by using a 3x3 mask:
+
+    x, y = pos
+    periphery = []
+
+    for i in range(x-1, x+2):
+        for j in range(y-1, y+2):
+            periphery.append(state[i][j])
+
+    periphery = np.array(periphery).reshape(3, 3)
+
+    # Assume the rate of the molecule moving in each
+    # direction is the same for now:
+
+    r_N, r_NE, r_E, r_SE, r_S, r_SW, r_W, r_NW = 1, 1, 1, 1, 1, 1, 1, 1
+    dir_rates_matrix = [[r_NW, r_N, r_NE], 
+                        [r_W,   0  , r_E], 
+                        [r_SW, r_S, r_SE]]
+    
+    # For each peripheral molecule that is not an
+    # empty space, set the rate of the molecule moving
+    # to zero (central molecule cannot move):
+
+    for i in range(3):
+        for j in range(3):
+            if i == 1 and j == 1:
+                continue
+            elif periphery[i, j] != 0:
+                dir_rates_matrix[i][j] = 0
+
+    return dir_rates_matrix
+
+
