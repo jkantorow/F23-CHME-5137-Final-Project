@@ -68,11 +68,10 @@ def initial_random_matrix(n, ratio):
     
     return state
 
-
 # Define and get the rates of each event occuring the system based on the
 # input parameters:
 
-def get_rates(state, T, mol_type, pos):
+def get_rates_prototype(state, T, mol_type, pos):
 
     """
     We don't necessarily know what the rates should be for each of these
@@ -318,4 +317,50 @@ def get_rates_simplified(state, pos):
 
     return dir_rates_matrix
 
+# Here is adam's code for the rate calculation
+# and a wrapper for the actual KMC simulation:
 
+def get_rates_adam(state, pos, T):
+
+    # Define the mol type:
+
+    mol_type = state[pos]
+
+    # Get peripheral position indices and
+    # identities:
+
+    x, y = pos
+
+    periph_pos = [(x-1, y-1), (x-1, y), (x-1, y+1),  #  0  1  2  # This object is a list
+                  (x, y-1),             (x, y+1),    #  3     4  # but can be thought of
+                  (x+1, y-1), (x+1, y), (x+1, y+1)]  #  5  6  7  # as a 3x3 matrix.
+
+    periph_ident = [state[periph_pos[0]], state[periph_pos[1]], state[periph_pos[2]],
+                    state[periph_pos[3]],                       state[periph_pos[4]],
+                    state[periph_pos[5]], state[periph_pos[6]], state[periph_pos[7]]]
+
+    # Assign easy names to peripheral position identities:
+
+    top_left, top, top_right = periph_ident[0], periph_ident[1], periph_ident[2]
+    left, right = periph_ident[3], periph_ident[4]
+    bot_left, bot, bot_right = periph_ident[5], periph_ident[6], periph_ident[7]
+
+    # Tally the identities of each peripheral molecule
+    # (this will be updated to accommodate ortho or para
+    # positions and pre-cured molecules):
+
+    n_phenol = periph_ident.count(1)
+    n_coal = periph_ident.count(2)
+    n_void = periph_ident.count(0)
+
+    # Define rxn rate constants
+    # (simplified for now):
+
+    kpp = 0.8
+    kpc = 0.2
+
+    # Define the KMC rates of each event:
+
+    r_kmc_pp = kpp - (kpc * 0.2)
+    r_kmc_pc = kpc - (kpp * 0.2)
+    r_kmc_no_rxn = 1 - (r_kmc_pp + r_kmc_pc)
