@@ -374,3 +374,38 @@ def get_rates_adam(state, pos, T):
     r_kmc_move = (1/8) * (n_void)
 
     return (r_kmc_pp, r_kmc_pc, r_kmc_no_rxn, r_kmc_move)
+
+# Adam's rate calculator still needs to be updated
+# but is our best bet at the moment. Here is a fucntion
+# that calculates the new state of the system:
+
+def get_new_state(current_state, T):
+    
+    """
+    A function that calculates the new state of the system
+    after a KMC event occurs.
+
+    current_state   : numpy array - the current state of the system in matrix
+                    : format.
+
+    T               : float - the temperature of the system.
+
+    """
+    
+    # Get the dimensions of the current state:
+
+    sim_size = current_state.shape[0]
+
+    # Find non-void positions in the current state
+    # that are not around the edges of the system:
+
+    non_void_pos = np.where(current_state != 0)
+    non_void_pos = list(zip(non_void_pos[0], non_void_pos[1]))
+
+    # Only consider the non-void positions that are
+    # not around the edges of the system:
+
+    non_void_pos = [pos for pos in non_void_pos if pos[0] != 0 and pos[0] != sim_size-1 and pos[1] != 0 and pos[1] != sim_size-1]
+    
+    # For each non-void position, calculate the rates
+    # and choose event that occurs:
