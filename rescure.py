@@ -364,7 +364,10 @@ def get_rates_adam(state, pos, T):
 
     r_kmc_pp = (kpp - (kpc * 0.2)) * (n_phenol)
     r_kmc_pc = (kpc - (kpp * 0.2)) * (n_coal)
-    r_kmc_no_rxn = (1 - (r_kmc_pp + r_kmc_pc))
+    r_kmc_no_rxn = (0 if (r_kmc_pp or r_kmc_pc) else 1) * (n_coal)
+
+    if r_kmc_no_rxn < 0:
+        r_kmc_no_rxn = 0
 
     # Define the KMC rates of each movement event:
 
