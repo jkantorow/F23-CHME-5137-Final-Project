@@ -324,7 +324,7 @@ def get_rates_adam(state, pos, T):
 
     # Define the mol type:
 
-    mol_type = state[pos]
+    # mol_type = state[pos]
 
     # Get peripheral position indices and
     # identities:
@@ -340,11 +340,11 @@ def get_rates_adam(state, pos, T):
                     state[periph_pos[5]], state[periph_pos[6]], state[periph_pos[7]]]
 
     # Assign easy names to peripheral position identities:
-
+    """
     top_left, top, top_right = periph_ident[0], periph_ident[1], periph_ident[2]
     left, right = periph_ident[3], periph_ident[4]
     bot_left, bot, bot_right = periph_ident[5], periph_ident[6], periph_ident[7]
-
+    """
     # Tally the identities of each peripheral molecule
     # (this will be updated to accommodate ortho or para
     # positions and pre-cured molecules):
@@ -356,11 +356,18 @@ def get_rates_adam(state, pos, T):
     # Define rxn rate constants
     # (simplified for now):
 
-    kpp = 0.8
-    kpc = 0.2
+    kpp = 0.8 * T
+    kpc = 0.2 * T
 
-    # Define the KMC rates of each event:
+    # Define the KMC rates of each event (weighted by
+    # the number of peripheral molecules of each type):
 
-    r_kmc_pp = kpp - (kpc * 0.2)
-    r_kmc_pc = kpc - (kpp * 0.2)
-    r_kmc_no_rxn = 1 - (r_kmc_pp + r_kmc_pc)
+    r_kmc_pp = (kpp - (kpc * 0.2)) * (n_phenol)
+    r_kmc_pc = (kpc - (kpp * 0.2)) * (n_coal)
+    r_kmc_no_rxn = (1 - (r_kmc_pp + r_kmc_pc))
+
+    # Define the KMC rates of each movement event:
+
+    r_kmc_move = (1/8) * (n_void)
+
+    return (r_kmc_pp, r_kmc_pc, r_kmc_no_rxn, r_kmc_move)
