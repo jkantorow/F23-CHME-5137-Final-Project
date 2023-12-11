@@ -320,7 +320,7 @@ def get_rates_simplified(state, pos):
 # Here is adam's code for the rate calculation
 # and a wrapper for the actual KMC simulation:
 
-def get_rates_adam(state, pos, T):
+def get_rates_phenol(state, pos, T):
 
     # Define the mol type:
 
@@ -371,9 +371,70 @@ def get_rates_adam(state, pos, T):
 
     # Define the KMC rates of each movement event:
 
-    r_kmc_move = (1/8) * (n_void)
+    if r_kmc_pp or r_kmc_pc:
+        move_prob = 1 / (n_phenol + n_coal)
+    else:
+        move_prob = 1
 
-    return (r_kmc_pp, r_kmc_pc, r_kmc_no_rxn, r_kmc_move)
+    r_kmc_move_ul = (1 if periph_ident[0] == 0 else 0) * move_prob
+    r_kmc_move_u = (1 if periph_ident[1] == 0 else 0) * move_prob
+    r_kmc_move_ur = (1 if periph_ident[2] == 0 else 0) * move_prob
+    r_kmc_move_l = (1 if periph_ident[3] == 0 else 0) * move_prob
+    r_kmc_move_r = (1 if periph_ident[4] == 0 else 0) * move_prob
+    r_kmc_move_dl = (1 if periph_ident[5] == 0 else 0) * move_prob
+    r_kmc_move_d = (1 if periph_ident[6] == 0 else 0) * move_prob
+    r_kmc_move_dr = (1 if periph_ident[7] == 0 else 0) * move_prob
+
+    return (r_kmc_pp, r_kmc_pc, r_kmc_no_rxn,
+            r_kmc_move_ul, r_kmc_move_u, r_kmc_move_ur,
+            r_kmc_move_l,                r_kmc_move_r,
+            r_kmc_move_dl, r_kmc_move_d, r_kmc_move_dr,
+            periph_pos, periph_ident)                       # Peripheral positions and identities
+
+# Now we need a function to pick the event that occurs 
+# based on the precalculated rates:
+
+def choose_event(rates):
+
+    """
+    Chooses the event to occur based on the rates in
+    tuple format.
+    
+    """
+
+    # Sum the rates:
+
+    total_rate = sum(rates)
+    cumulative_rate = np.cumsum(rates)
+
+    # Randomly choose an event based on the rates:
+
+    choice = rand.uniform(0, total_rate)
+
+    if 0 <= choice < cumulative_rate[0]:
+        return "pp_rxn"
+    elif cumulative_rate[0] <= choice < cumulative_rate[1]:
+        return "pc_rxn"
+    elif cumulative_rate[1] <= choice < cumulative_rate[2]:
+        return "no_rxn"
+    elif cumulative_rate[2] <= choice < cumulative_rate[3]:
+        return "move_ul"
+    elif cumulative_rate[3] <= choice < cumulative_rate[4]:
+        return "move_u"
+    elif cumulative_rate[4] <= choice < cumulative_rate[5]:
+        return "move_ur"
+    elif cumulative_rate[5] <= choice < cumulative_rate[6]:
+        return "move_l"
+    elif cumulative_rate[6] <= choice < cumulative_rate[7]:
+        return "move_r"
+    elif cumulative_rate[7] <= choice < cumulative_rate[8]:
+        return "move_dl"
+    elif cumulative_rate[8] <= choice < cumulative_rate[9]:
+        return "move_d"
+    elif cumulative_rate[9] <= choice < cumulative_rate[10]:
+        return "move_dr"
+
+
 
 # Adam's rate calculator still needs to be updated
 # but is our best bet at the moment. Here is a fucntion
@@ -399,13 +460,17 @@ def get_new_state(current_state, T):
     # Find non-void positions in the current state
     # that are not around the edges of the system:
 
-    non_void_pos = np.where(current_state != 0)
-    non_void_pos = list(zip(non_void_pos[0], non_void_pos[1]))
+    phenol_pos = np.where(current_state == 1)
+    coal_pos = np.where(current_state == 2)
+
+    phenol_pos = list(zip(phenol_pos[0], phenol_pos[1]))
+    coal_pos = list(zip(coal_pos[0], coal_pos[1]))
 
     # Only consider the non-void positions that are
     # not around the edges of the system:
 
-    non_void_pos = [pos for pos in non_void_pos if pos[0] != 0 and pos[0] != sim_size-1 and pos[1] != 0 and pos[1] != sim_size-1]
-    
+    phenol_pos = [pos for pos in phenol_pos if pos[0] != 0 and pos[0] != sim_size-1 and pos[1] != 0 and pos[1] != sim_size-1]
+    coal_pos = [pos for pos in coal_pos if pos[0] != 0 and pos[0] != sim_size-1 and pos[1] != 0 and pos[1] != sim_size-1]
+
     # For each non-void position, calculate the rates
     # and choose event that occurs:
