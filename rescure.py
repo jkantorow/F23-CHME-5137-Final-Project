@@ -351,7 +351,7 @@ def get_rates_phenol(state, pos, T):
 
     n_phenol = periph_ident.count(1)
     n_coal = periph_ident.count(2)
-    n_void = periph_ident.count(0)
+    # n_void = periph_ident.count(0)
 
     # Define rxn rate constants
     # (simplified for now):
@@ -390,6 +390,77 @@ def get_rates_phenol(state, pos, T):
             r_kmc_move_l,                r_kmc_move_r,
             r_kmc_move_dl, r_kmc_move_d, r_kmc_move_dr,
             periph_pos, periph_ident)                       # Peripheral positions and identities
+
+def get_rates_coal(state, pos, T):
+
+    # Define the mol type:
+
+    # mol_type = state[pos]
+
+    # Get peripheral position indices and
+    # identities:
+
+    x, y = pos
+
+    periph_pos = [(x-1, y-1), (x-1, y), (x-1, y+1),  #  0  1  2  # This object is a list
+                  (x, y-1),             (x, y+1),    #  3     4  # but can be thought of
+                  (x+1, y-1), (x+1, y), (x+1, y+1)]  #  5  6  7  # as a 3x3 matrix.
+
+    periph_ident = [state[periph_pos[0]], state[periph_pos[1]], state[periph_pos[2]],
+                    state[periph_pos[3]],                       state[periph_pos[4]],
+                    state[periph_pos[5]], state[periph_pos[6]], state[periph_pos[7]]]
+
+    # Assign easy names to peripheral position identities:
+    """
+    top_left, top, top_right = periph_ident[0], periph_ident[1], periph_ident[2]
+    left, right = periph_ident[3], periph_ident[4]
+    bot_left, bot, bot_right = periph_ident[5], periph_ident[6], periph_ident[7]
+    """
+    # Tally the identities of each peripheral molecule
+    # (this will be updated to accommodate ortho or para
+    # positions and pre-cured molecules):
+
+    n_phenol = periph_ident.count(1)
+    n_coal = periph_ident.count(2)
+    # n_void = periph_ident.count(0)
+
+    # Define rxn rate constants
+    # (simplified for now)
+    # coal cannot react with itself, so we only need
+    # to define the rate of coal reacting with phenol:
+
+    kcp = 0.2 * T # Again we need to change this
+
+    # Define the KMC rates of each event (weighted by
+    # the number of peripheral molecules of each type):
+
+    r_kmc_cp = kcp * (n_coal)
+    r_kmc_no_rxn = (0 if kcp else 1)
+
+    if r_kmc_no_rxn < 0:
+        r_kmc_no_rxn = 0
+
+    # Define the KMC rates of each movement event:
+
+    if r_kmc_cp:
+        move_prob = 1 / (n_phenol + n_coal)
+    else:
+        move_prob = 1
+
+    r_kmc_move_ul = (1 if periph_ident[0] == 0 else 0) * move_prob
+    r_kmc_move_u = (1 if periph_ident[1] == 0 else 0) * move_prob
+    r_kmc_move_ur = (1 if periph_ident[2] == 0 else 0) * move_prob
+    r_kmc_move_l = (1 if periph_ident[3] == 0 else 0) * move_prob
+    r_kmc_move_r = (1 if periph_ident[4] == 0 else 0) * move_prob
+    r_kmc_move_dl = (1 if periph_ident[5] == 0 else 0) * move_prob
+    r_kmc_move_d = (1 if periph_ident[6] == 0 else 0) * move_prob
+    r_kmc_move_dr = (1 if periph_ident[7] == 0 else 0) * move_prob
+
+    return (r_kmc_cp, r_kmc_no_rxn,
+            r_kmc_move_ul, r_kmc_move_u, r_kmc_move_ur,
+            r_kmc_move_l,                r_kmc_move_r,
+            r_kmc_move_dl, r_kmc_move_d, r_kmc_move_dr,
+            periph_pos, periph_ident)
 
 # Now we need a function to pick the event that occurs 
 # based on the precalculated rates:
@@ -433,8 +504,6 @@ def choose_event(rates):
         return "move_d"
     elif cumulative_rate[9] <= choice < cumulative_rate[10]:
         return "move_dr"
-
-
 
 # Adam's rate calculator still needs to be updated
 # but is our best bet at the moment. Here is a fucntion
