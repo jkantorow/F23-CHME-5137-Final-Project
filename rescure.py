@@ -370,7 +370,7 @@ def get_new_state(current_state, T):
 
             all_rate_data = get_rates_phenol(current_state, coords, T)
             rates = all_rate_data[0:11]
-            periph_pos, periph_ident = all_rate_data[12], all_rate_data[13]
+            periph_pos, periph_ident = all_rate_data[11], all_rate_data[12]
             
             # Choose the event that occurs:
 
@@ -380,7 +380,7 @@ def get_new_state(current_state, T):
 
             all_rate_data = get_rates_coal(current_state, coords, T)
             rates = all_rate_data[0:10]
-            periph_pos, periph_ident = all_rate_data[11], all_rate_data[12]
+            periph_pos, periph_ident = all_rate_data[10], all_rate_data[11]
 
             # Choose the event that occurs:
 
