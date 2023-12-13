@@ -68,188 +68,494 @@ def initial_random_matrix(n, ratio):
     
     return state
 
-
 # Define and get the rates of each event occuring the system based on the
 # input parameters:
 
-def get_rates(state, T, mol_type, pos):
+# Here is adam's code for the rate calculation
+# and a wrapper for the actual KMC simulation:
 
-    """
-    We don't necessarily know what the rates should be for each of these
-    events; for now we use a place holder to indicate that we need to 
-    update this.
+def get_rates_phenol(state, pos, T):
 
-    We need to determine what the input parameters should be
-    to describe each molecule of the system (we can change these as needed):
+    # Define the mol type:
 
-    state    : numpy array - the current state of the system in matrix
-             : format.
+    # mol_type = state[pos]
 
-    T        : float - the temperature of the molecule (same as the temperature
-             : of the whole system in our case).
-
-    mol_type : float - the type of molecule in the system (1, or 2);
-             : all information about the molecule can be stored in this
-             : function and used to determine the rates of each event.
-
-    pos      : tuple - the position of the molecule in the matrix; this
-             : is used to find the identification of the peripheral molecules
-             : in the immediate vicinity of the current molecule.
-
-             molecule i,j and its immediate peripheral molecules can be
-             thought of as follows where i=rows and j=columns:
-
-             (i-1,j-1) (i-1, j ) (i-1,j+1)
-
-             ( i ,j-1) ( i , j ) ( i ,j+1)
-
-             (i+1,j-1) (i+1, j ) (i+1,j+1)
-
-    """
-
-    # Get identities and positions of each peripheral molecule:
-    # by using a 3x3 mask:
+    # Get peripheral position indices and
+    # identities:
 
     x, y = pos
-    periphery = []
 
-    for i in range(x-1, x+2):
-        for j in range(y-1, y+2):
-            periphery.append(state[i][j])
+    periph_pos = [(x-1, y-1), (x-1, y), (x-1, y+1),  #  0  1  2  # This object is a list
+                  (x, y-1),             (x, y+1),    #  3     4  # but can be thought of
+                  (x+1, y-1), (x+1, y), (x+1, y+1)]  #  5  6  7  # as a 3x3 matrix.
 
-    periphery = np.array(periphery).reshape(3, 3)
+    periph_ident = [state[periph_pos[0]], state[periph_pos[1]], state[periph_pos[2]],
+                    state[periph_pos[3]],                       state[periph_pos[4]],
+                    state[periph_pos[5]], state[periph_pos[6]], state[periph_pos[7]]]
 
-    # Calculate the rate of each event occuring based
-    # on a huge if else tree:
+    # Assign easy names to peripheral position identities:
+    """
+    top_left, top, top_right = periph_ident[0], periph_ident[1], periph_ident[2]
+    left, right = periph_ident[3], periph_ident[4]
+    bot_left, bot, bot_right = periph_ident[5], periph_ident[6], periph_ident[7]
+    """
+    # Tally the identities of each peripheral molecule
+    # (this will be updated to accommodate ortho or para
+    # positions and pre-cured molecules):
 
-    # Set up dummy reaction constants for phenol
-    # and coalin different positions:
+    n_phenol = periph_ident.count(1)
+    n_coal = periph_ident.count(2)
+    # n_void = periph_ident.count(0)
 
-    k_para_phenol = 0.034
-    k_ortho_phenol = 0.063
+    # Define rxn rate constants
+    # (simplified for now):
 
-    k_para_coal = 0.24
-    k_ortho_coal = 0.45
+    kpp = 0.8 * T
+    kpc = 0.2 * T
 
-    # Define the probabilities of each reaction
-    # occuring (fixed for now):
+    # Define the KMC rates of each event (weighted by
+    # the number of peripheral molecules of each type):
 
-    p_para_phenol = 0.63
-    p_ortho_phenol = 0.37
+    r_kmc_pp = (kpp - (kpc * 0.2)) * (n_phenol)
+    r_kmc_pc = (kpc - (kpp * 0.2)) * (n_coal)
+    r_kmc_no_rxn = (0 if (r_kmc_pp or r_kmc_pc) else 1)
 
-    p_para_coal = 0.15
-    p_ortho_coal = 0.85
+    if r_kmc_no_rxn < 0:
+        r_kmc_no_rxn = 0
 
-    # Define the total chance that a crosslinking reaction
-    # occurs depending on the types of peripheral molecules
-    # or the chance that no reaction occurs at all (fixed for now):
+    # Define the KMC rates of each movement event:
 
-    total_curing_rate_phenol = 0
-    total_curing_rate_coal = 0
-    total_rate_no_rxn = 0
+    if r_kmc_pp or r_kmc_pc:
+        move_prob = 1 / (n_phenol + n_coal)
+    else:
+        move_prob = 1
 
-    # If mol_type is a phenol:
+    r_kmc_move_ul = (1 if periph_ident[0] == 0 else 0) * move_prob
+    r_kmc_move_u = (1 if periph_ident[1] == 0 else 0) * move_prob
+    r_kmc_move_ur = (1 if periph_ident[2] == 0 else 0) * move_prob
+    r_kmc_move_l = (1 if periph_ident[3] == 0 else 0) * move_prob
+    r_kmc_move_r = (1 if periph_ident[4] == 0 else 0) * move_prob
+    r_kmc_move_dl = (1 if periph_ident[5] == 0 else 0) * move_prob
+    r_kmc_move_d = (1 if periph_ident[6] == 0 else 0) * move_prob
+    r_kmc_move_dr = (1 if periph_ident[7] == 0 else 0) * move_prob
 
+    return (r_kmc_pp, r_kmc_pc, r_kmc_no_rxn,
+            r_kmc_move_ul, r_kmc_move_u, r_kmc_move_ur,
+            r_kmc_move_l,                r_kmc_move_r,
+            r_kmc_move_dl, r_kmc_move_d, r_kmc_move_dr,
+            periph_pos, periph_ident)                       # Peripheral positions and identities
+
+def get_rates_coal(state, pos, T):
+
+    # Define the mol type:
+
+    # mol_type = state[pos]
+
+    # Get peripheral position indices and
+    # identities:
+
+    x, y = pos
+
+    periph_pos = [(x-1, y-1), (x-1, y), (x-1, y+1),  #  0  1  2  # This object is a list
+                  (x, y-1),             (x, y+1),    #  3     4  # but can be thought of
+                  (x+1, y-1), (x+1, y), (x+1, y+1)]  #  5  6  7  # as a 3x3 matrix.
+
+    periph_ident = [state[periph_pos[0]], state[periph_pos[1]], state[periph_pos[2]],
+                    state[periph_pos[3]],                       state[periph_pos[4]],
+                    state[periph_pos[5]], state[periph_pos[6]], state[periph_pos[7]]]
+
+    # Assign easy names to peripheral position identities:
+    """
+    top_left, top, top_right = periph_ident[0], periph_ident[1], periph_ident[2]
+    left, right = periph_ident[3], periph_ident[4]
+    bot_left, bot, bot_right = periph_ident[5], periph_ident[6], periph_ident[7]
+    """
+    # Tally the identities of each peripheral molecule
+    # (this will be updated to accommodate ortho or para
+    # positions and pre-cured molecules):
+
+    n_phenol = periph_ident.count(1)
+    n_coal = periph_ident.count(2)
+    # n_void = periph_ident.count(0)
+
+    # Define rxn rate constants
+    # (simplified for now)
+    # coal cannot react with itself, so we only need
+    # to define the rate of coal reacting with phenol:
+
+    kcp = 0.2 * T # Again we need to change this
+
+    # Define the KMC rates of each event (weighted by
+    # the number of peripheral molecules of each type):
+
+    r_kmc_cp = kcp * (n_coal)
+    r_kmc_no_rxn = (0 if kcp else 1)
+
+    if r_kmc_no_rxn < 0:
+        r_kmc_no_rxn = 0
+
+    # Define the KMC rates of each movement event:
+
+    if r_kmc_cp:
+        move_prob = 1 / (n_phenol + n_coal)
+    else:
+        move_prob = 1
+
+    r_kmc_move_ul = (1 if periph_ident[0] == 0 else 0) * move_prob
+    r_kmc_move_u = (1 if periph_ident[1] == 0 else 0) * move_prob
+    r_kmc_move_ur = (1 if periph_ident[2] == 0 else 0) * move_prob
+    r_kmc_move_l = (1 if periph_ident[3] == 0 else 0) * move_prob
+    r_kmc_move_r = (1 if periph_ident[4] == 0 else 0) * move_prob
+    r_kmc_move_dl = (1 if periph_ident[5] == 0 else 0) * move_prob
+    r_kmc_move_d = (1 if periph_ident[6] == 0 else 0) * move_prob
+    r_kmc_move_dr = (1 if periph_ident[7] == 0 else 0) * move_prob
+
+    return (r_kmc_cp, r_kmc_no_rxn,
+            r_kmc_move_ul, r_kmc_move_u, r_kmc_move_ur,
+            r_kmc_move_l,                r_kmc_move_r,
+            r_kmc_move_dl, r_kmc_move_d, r_kmc_move_dr,
+            periph_pos, periph_ident)
+
+# Now we need a function to pick the event that occurs 
+# based on the precalculated rates:
+
+def choose_event(rates, mol_type):
+
+    """
+    Chooses the event to occur based on the rates in
+    tuple format.
+    
+    """
+
+    # Sum the rates:
+
+    total_rate = sum(rates)
+    cumulative_rate = np.cumsum(rates)
+
+    # Randomly choose an event based on the rates:
+
+    choice = rand.uniform(0, total_rate)
+    
     if mol_type == 1:
 
-        # For each peripheral molecule:
+        if 0 <= choice < cumulative_rate[0]:
+            return "pp_rxn"
+        elif cumulative_rate[0] <= choice < cumulative_rate[1]:
+            return "pc_rxn"
+        elif cumulative_rate[1] <= choice < cumulative_rate[2]:
+            return "no_rxn"
+        elif cumulative_rate[2] <= choice < cumulative_rate[3]:
+            return "move_ul"
+        elif cumulative_rate[3] <= choice < cumulative_rate[4]:
+            return "move_u"
+        elif cumulative_rate[4] <= choice < cumulative_rate[5]:
+            return "move_ur"
+        elif cumulative_rate[5] <= choice < cumulative_rate[6]:
+            return "move_l"
+        elif cumulative_rate[6] <= choice < cumulative_rate[7]:
+            return "move_r"
+        elif cumulative_rate[7] <= choice < cumulative_rate[8]:
+            return "move_dl"
+        elif cumulative_rate[8] <= choice < cumulative_rate[9]:
+            return "move_d"
+        elif cumulative_rate[9] <= choice < cumulative_rate[10]:
+            return "move_dr"
+        
+    elif mol_type == 2:
 
-        for i in range(3):
+        if 0 <= choice < cumulative_rate[0]:
+            return "pc_rxn"
+        elif cumulative_rate[0] <= choice < cumulative_rate[1]:
+            return "no_rxn"
+        elif cumulative_rate[1] <= choice < cumulative_rate[2]:
+            return "move_ul"
+        elif cumulative_rate[2] <= choice < cumulative_rate[3]:
+            return "move_u"
+        elif cumulative_rate[3] <= choice < cumulative_rate[4]:
+            return "move_ur"
+        elif cumulative_rate[4] <= choice < cumulative_rate[5]:
+            return "move_l"
+        elif cumulative_rate[5] <= choice < cumulative_rate[6]:
+            return "move_r"
+        elif cumulative_rate[6] <= choice < cumulative_rate[7]:
+            return "move_dl"
+        elif cumulative_rate[7] <= choice < cumulative_rate[8]:
+            return "move_d"
+        elif cumulative_rate[8] <= choice < cumulative_rate[9]:
+            return "move_dr"
+        
+    else:
 
-            for j in range(3):
+        raise("Invalid molecule type in choose_event function.")
 
-                # if (i, j) is the central molecule, skip it:
+# Adam's rate calculator still needs to be updated
+# but is our best bet at the moment. Here is a fucntion
+# that calculates the new state of the system:
 
-                if i == x and j == y:
+def get_new_state(current_state, T):
+    
+    """
+    A function that calculates the new state of the system
+    after a KMC event occurs.
 
-                    continue
+    current_state   : numpy array - the current state of the system in matrix
+                    : format.
 
-                elif periphery[i, j] == 1:
+    T               : float - the temperature of the system.
 
-                    # Randomly choose between k_ortho_phenol and k_para_phenol
-                    # based on their respective probabilities of 
-                    # occuring:
+    """
+    
+    # Get the dimensions of the current state:
 
-                    k = rand.choices([k_ortho_phenol, k_para_phenol], [p_ortho_phenol, p_para_phenol])
+    sim_size = current_state.shape[0]
 
-                    # Add the partial rate contribution for each
-                    # peripheral molecule if is a phenol:
+    # Create a copy of the current state to be used
+    # as a blank canvas for the new state:
 
-                    total_curing_rate_phenol += (1/8)*k
+    new_state = np.copy(current_state)
 
-                elif periphery[i, j] == 2:
-                        
-                    k = rand.choices([k_ortho_coal, k_para_coal], [p_ortho_coal, p_para_coal])
-                    total_curing_rate_coal += (1/8)*k # NEED EDIT
+    # Find non-void positions in the current state
+    # that are not around the edges of the system:
 
-                else:
+    phenol_pos = np.where(current_state == 1)
+    coal_pos = np.where(current_state == 2)
 
-                    # If the peripheral molecule is empty 
-                    # or already crosslinked, add to the 
-                    # rate that no reaction occurs:
+    phenol_pos = list(zip(phenol_pos[0], phenol_pos[1]))
+    coal_pos = list(zip(coal_pos[0], coal_pos[1]))
 
-                    total_rate_no_rxn += (1/8)
-                    
-                    
+    # Only consider the molecular positions that are
+    # not around the edges of the system:
 
-    PLACEHOLDER = None
+    phenol_pos = [pos for pos in phenol_pos if pos[0] != 0 and pos[0] != sim_size-1 and pos[1] != 0 and pos[1] != sim_size-1]
+    coal_pos = [pos for pos in coal_pos if pos[0] != 0 and pos[0] != sim_size-1 and pos[1] != 0 and pos[1] != sim_size-1]
 
-    # Reaction events:
+    # For each molecular position, calculate the rates
+    # and choose event that occurs:
 
-    # KMC rate of phenol reacting with another phenol:
-    # I think we can determine this rate mostly using the
-    # structure of the molecules interacting and the
-    # reaction rate constant (theoretically).
+    all_mols = phenol_pos + coal_pos
 
-    rate_res_cures_alone = PLACEHOLDER
+    # What are we extracting after the new state is calculated?
+    # We need to extract the final heat of reaction from summing
+    # all of the reactions that occur in the system (phenol to
+    # phenol, and phenol to coal), how many coal particles reacted
+    # with phenol, and the degree of crosslinking
+    # in the system (number of crosslinked phenol molecules). We
+    # will need to set these variables up here:
 
-    # KMC rate of phenol reacting with coal:
+    # Number of crosslinks occuring in this iteration of the system:
 
-    rate_res_cures_with_coal = PLACEHOLDER
+    n_crosslinks = 0
 
-    # KMC rate of no reaction occuring:
+    # Number of coal particles that reacted with phenol in this
+    # iteration of the system:
 
-    rate_no_rxn = PLACEHOLDER
+    n_coal_rxn = 0
 
-    # Translocation events (could nix this if
-    # the system gets too complicated):
+    # Heat of reaction of this iteration of the system:
 
-    # Getting rid of the swapping problem could
-    # make this much simpler, also Adam suggests
-    # compiling all of these rates into one "
-    # movement" rate.
+    mol_heat_rxn = 0
 
-    # To do this let's define a singular rate
-    # of a movement event occuring:
+    for coords in all_mols:
 
-    rate_mol_moves = PLACEHOLDER
+        # Technically, this would overwrite some of the changes made
+        # previously to the new state if a molecule is in the same
+        # 3x3 matrix as another molecule since the frame of reference
+        # can overlap, but we may not have time to change this.
 
-    rate_mol_moves_NW = PLACEHOLDER
-    rate_mol_moves_N = PLACEHOLDER
-    rate_mol_moves_NE = PLACEHOLDER
-    rate_mol_moves_E = PLACEHOLDER
-    rate_mol_moves_SE = PLACEHOLDER
-    rate_mol_moves_S = PLACEHOLDER
-    rate_mol_moves_SW = PLACEHOLDER
-    rate_mol_moves_W = PLACEHOLDER
+        # Get the rates of each event occuring (since the get_rates
+        # functions output the rates and the peripheral positions, 
+        # we need to save both data separately):
 
+        if current_state[coords] == 1:
 
-    # We need the output of the crosslinking degree
-    # depending on the molecular weight and the
-    # involved functional group of the molecule.
-    # We can keep track of every time a crosslinking
-    # event occurs and then represent this value as a ratio
-    # of the total number of molecules in the system.
+            all_rate_data = get_rates_phenol(current_state, coords, T)
+            rates = all_rate_data[0:11]
+            periph_pos, periph_ident = all_rate_data[11], all_rate_data[12]
+            
+            # Choose the event that occurs:
 
-    return (rate_res_cures_alone,
-            rate_res_cures_with_coal,
-            rate_no_rxn,
-            rate_mol_moves_NW,
-            rate_mol_moves_N,
-            rate_mol_moves_NE,
-            rate_mol_moves_E,
-            rate_mol_moves_SE,
-            rate_mol_moves_S,
-            rate_mol_moves_SW,
-            rate_mol_moves_W)
+            event = choose_event(rates, 1)
 
+        elif current_state[coords] == 2:
+
+            all_rate_data = get_rates_coal(current_state, coords, T)
+            rates = all_rate_data[0:10]
+            periph_pos, periph_ident = all_rate_data[10], all_rate_data[11]
+
+            # Choose the event that occurs:
+
+            event = choose_event(rates, 2)
+
+        else:
+
+            # If the current state is not a phenol or coal (i.e. it
+            # has crosslinked or reacted with coal), then we do not
+            # need to calculate the rates of the events occuring:
+
+            continue
+
+        # Update the new state based on the event that
+        # occurs:
+
+        if event == "pp_rxn":
+
+            # Phenol molecule becomes a 3 to represent that 
+            # it has crosslinked:
+
+            new_state[coords] = 3
+
+            # However, the molecule which it reacted with also
+            # has to become a 3 since both molecules crosslinked.
+            # Additionally, since any of the peripheral phenol
+            # molecules (if multiple exist) could have reacted
+            # with an equal probability, we need to randomly
+            # determine which peripheral phenol molecule reacted
+            # and update that new molecule to a 3 as well:
+
+            periph_phenol_index = np.where(np.array(periph_ident) == 1)[0]
+
+            # Randomly choose a peripheral phenol molecule:
+
+            random_phenol_choice = rand.choice(periph_phenol_index)
+
+            # Update the new state:
+
+            new_state[periph_pos[random_phenol_choice]] = 3
+
+            # Update the number of crosslinks and the heat of
+            # reaction:
+
+            n_crosslinks += 1
+            mol_heat_rxn += 0.00043 # This is a placeholder value
+
+        elif event == "pc_rxn":
+
+            # Phenol molecule becomes a 4 to represent that
+            # it has reacted with coal:
+
+            new_state[coords] = 4
+
+            # Find peripheral coal molecules:
+
+            periph_coal_index = np.where(np.array(periph_ident) == 2)[0]
+
+            # Randomly choose a peripheral coal molecule:
+
+            random_coal_choice = rand.choice(periph_coal_index)
+
+            # Update the new state:
+
+            new_state[periph_pos[random_coal_choice]] = 4
+
+            # Update the number of coal particles that reacted
+
+            n_coal_rxn += 1
+            mol_heat_rxn += 0.00015 # This is a placeholder value
+
+        elif event == "no_rxn":
+            pass
+        elif event == "move_ul":
+            new_state[coords] = 0
+            new_state[periph_pos[0]] = current_state[coords]
+        elif event == "move_u":
+            new_state[coords] = 0
+            new_state[periph_pos[1]] = current_state[coords]
+        elif event == "move_ur":
+            new_state[coords] = 0
+            new_state[periph_pos[2]] = current_state[coords]
+        elif event == "move_l":
+            new_state[coords] = 0
+            new_state[periph_pos[3]] = current_state[coords]
+        elif event == "move_r":
+            new_state[coords] = 0
+            new_state[periph_pos[4]] = current_state[coords]
+        elif event == "move_dl":
+            new_state[coords] = 0
+            new_state[periph_pos[5]] = current_state[coords]
+        elif event == "move_d":
+            new_state[coords] = 0
+            new_state[periph_pos[6]] = current_state[coords]
+        elif event == "move_dr":
+            new_state[coords] = 0
+            new_state[periph_pos[7]] = current_state[coords]
+    
+    # We need to update the resulting temperature of the system
+    # based on the output heat of reaction:
+    # Assume: delta H = m * c * (T_final - T_initial)
+    # So: T_final = T_initial + (delta H / (m * c))
+    
+    # Assume a constant heat capacity of resin and coal:
+
+    heat_capacity = 1 # This is a placeholder value
+    m = 1 # This is a placeholder value
+
+    # Update the temperature of the system:
+
+    T += mol_heat_rxn / (m * heat_capacity)
+
+    # Return the new state of the system and the desired
+    # output variables:
+
+    return new_state, T, n_crosslinks, n_coal_rxn, mol_heat_rxn
+
+# Now we need to wrap the get_new_state function in a
+# function that will run the simulation for a given
+# number of system state iterations:
+
+def resin_cure_simulation(n, ratio, T, n_iter):
+
+    """
+    A function that runs the simulation for a given
+    number of system state iterations.
+
+    n       : int - the size of the system in the x
+            : and y dimensions.
+
+    ratio   : list - the ratio of voids to phenol to
+            : coal in the system at time 0.
+
+    T       : float - the initial temperature of the
+            : system.
+
+    n_iter  : int - the number of iterations of the
+            : system state.
+
+    """
+
+    # Generate the initial state of the system:
+
+    state = initial_random_matrix(n, ratio)
+
+    # Initialize the output variables:
+
+    state_list = [state]
+
+    crosslinks = []
+    coal_rxn = []
+    heat_rxn = []
+    temps = [T]
+
+    # Run the simulation for the desired number of
+    # iterations:
+
+    for i in range(n_iter):
+
+        # Calculate the new state of the system:
+
+        new_state, T, n_crosslinks, n_coal_rxn, mol_heat_rxn = get_new_state(state, T)
+
+        # Update the state of the system:
+
+        state_list.append(new_state)
+        state = new_state
+
+        # Append the output variables:
+
+        crosslinks.append(n_crosslinks)
+        coal_rxn.append(n_coal_rxn)
+        heat_rxn.append(mol_heat_rxn)
+        temps.append(T)
+
+    # Return the output variables:
+
+    return state_list, temps, crosslinks, coal_rxn, heat_rxn
