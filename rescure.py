@@ -219,7 +219,7 @@ def get_rates_coal(state, pos, T):
 # Now we need a function to pick the event that occurs 
 # based on the precalculated rates:
 
-def choose_event(rates):
+def choose_event(rates, mol_type):
 
     """
     Chooses the event to occur based on the rates in
@@ -235,29 +235,58 @@ def choose_event(rates):
     # Randomly choose an event based on the rates:
 
     choice = rand.uniform(0, total_rate)
+    
+    if mol_type == 1:
 
-    if 0 <= choice < cumulative_rate[0]:
-        return "pp_rxn"
-    elif cumulative_rate[0] <= choice < cumulative_rate[1]:
-        return "pc_rxn"
-    elif cumulative_rate[1] <= choice < cumulative_rate[2]:
-        return "no_rxn"
-    elif cumulative_rate[2] <= choice < cumulative_rate[3]:
-        return "move_ul"
-    elif cumulative_rate[3] <= choice < cumulative_rate[4]:
-        return "move_u"
-    elif cumulative_rate[4] <= choice < cumulative_rate[5]:
-        return "move_ur"
-    elif cumulative_rate[5] <= choice < cumulative_rate[6]:
-        return "move_l"
-    elif cumulative_rate[6] <= choice < cumulative_rate[7]:
-        return "move_r"
-    elif cumulative_rate[7] <= choice < cumulative_rate[8]:
-        return "move_dl"
-    elif cumulative_rate[8] <= choice < cumulative_rate[9]:
-        return "move_d"
-    elif cumulative_rate[9] <= choice < cumulative_rate[10]:
-        return "move_dr"
+        if 0 <= choice < cumulative_rate[0]:
+            return "pp_rxn"
+        elif cumulative_rate[0] <= choice < cumulative_rate[1]:
+            return "pc_rxn"
+        elif cumulative_rate[1] <= choice < cumulative_rate[2]:
+            return "no_rxn"
+        elif cumulative_rate[2] <= choice < cumulative_rate[3]:
+            return "move_ul"
+        elif cumulative_rate[3] <= choice < cumulative_rate[4]:
+            return "move_u"
+        elif cumulative_rate[4] <= choice < cumulative_rate[5]:
+            return "move_ur"
+        elif cumulative_rate[5] <= choice < cumulative_rate[6]:
+            return "move_l"
+        elif cumulative_rate[6] <= choice < cumulative_rate[7]:
+            return "move_r"
+        elif cumulative_rate[7] <= choice < cumulative_rate[8]:
+            return "move_dl"
+        elif cumulative_rate[8] <= choice < cumulative_rate[9]:
+            return "move_d"
+        elif cumulative_rate[9] <= choice < cumulative_rate[10]:
+            return "move_dr"
+        
+    elif mol_type == 2:
+
+        if 0 <= choice < cumulative_rate[0]:
+            return "pc_rxn"
+        elif cumulative_rate[0] <= choice < cumulative_rate[1]:
+            return "no_rxn"
+        elif cumulative_rate[1] <= choice < cumulative_rate[2]:
+            return "move_ul"
+        elif cumulative_rate[2] <= choice < cumulative_rate[3]:
+            return "move_u"
+        elif cumulative_rate[3] <= choice < cumulative_rate[4]:
+            return "move_ur"
+        elif cumulative_rate[4] <= choice < cumulative_rate[5]:
+            return "move_l"
+        elif cumulative_rate[5] <= choice < cumulative_rate[6]:
+            return "move_r"
+        elif cumulative_rate[6] <= choice < cumulative_rate[7]:
+            return "move_dl"
+        elif cumulative_rate[7] <= choice < cumulative_rate[8]:
+            return "move_d"
+        elif cumulative_rate[8] <= choice < cumulative_rate[9]:
+            return "move_dr"
+        
+    else:
+
+        raise("Invalid molecule type in choose_event function.")
 
 # Adam's rate calculator still needs to be updated
 # but is our best bet at the moment. Here is a fucntion
@@ -342,12 +371,20 @@ def get_new_state(current_state, T):
             all_rate_data = get_rates_phenol(current_state, coords, T)
             rates = all_rate_data[0:11]
             periph_pos, periph_ident = all_rate_data[12], all_rate_data[13]
+            
+            # Choose the event that occurs:
+
+            event = choose_event(rates, 1)
 
         elif current_state[coords] == 2:
 
             all_rate_data = get_rates_coal(current_state, coords, T)
             rates = all_rate_data[0:10]
             periph_pos, periph_ident = all_rate_data[11], all_rate_data[12]
+
+            # Choose the event that occurs:
+
+            event = choose_event(rates, 2)
 
         else:
 
@@ -356,10 +393,6 @@ def get_new_state(current_state, T):
             # need to calculate the rates of the events occuring:
 
             continue
-
-        # Choose the event that occurs:
-
-        event = choose_event(rates)
 
         # Update the new state based on the event that
         # occurs:
