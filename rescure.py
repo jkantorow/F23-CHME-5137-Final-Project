@@ -446,10 +446,24 @@ def get_new_state(current_state, T):
             new_state[coords] = 0
             new_state[periph_pos[7]] = current_state[coords]
     
+    # We need to update the resulting temperature of the system
+    # based on the output heat of reaction:
+    # Assume: delta H = m * c * (T_final - T_initial)
+    # So: T_final = T_initial + (delta H / (m * c))
+    
+    # Assume a constant heat capacity of resin and coal:
+
+    heat_capacity = 1 # This is a placeholder value
+    m = 1 # This is a placeholder value
+
+    # Update the temperature of the system:
+
+    T += mol_heat_rxn / (m * heat_capacity)
+
     # Return the new state of the system and the desired
     # output variables:
 
-    return new_state, n_crosslinks, n_coal_rxn, mol_heat_rxn
+    return new_state, T, n_crosslinks, n_coal_rxn, mol_heat_rxn
 
 # Now we need to wrap the get_new_state function in a
 # function that will run the simulation for a given
@@ -467,7 +481,8 @@ def resin_cure_simulation(n, ratio, T, n_iter):
     ratio   : list - the ratio of voids to phenol to
             : coal in the system at time 0.
 
-    T       : float - the temperature of the system.
+    T       : float - the initial temperature of the
+            : system.
 
     n_iter  : int - the number of iterations of the
             : system state.
@@ -485,6 +500,7 @@ def resin_cure_simulation(n, ratio, T, n_iter):
     crosslinks = []
     coal_rxn = []
     heat_rxn = []
+    temps = [T]
 
     # Run the simulation for the desired number of
     # iterations:
@@ -493,7 +509,7 @@ def resin_cure_simulation(n, ratio, T, n_iter):
 
         # Calculate the new state of the system:
 
-        new_state, n_crosslinks, n_coal_rxn, mol_heat_rxn = get_new_state(state, T)
+        new_state, T, n_crosslinks, n_coal_rxn, mol_heat_rxn = get_new_state(state, T)
 
         # Update the state of the system:
 
@@ -505,7 +521,8 @@ def resin_cure_simulation(n, ratio, T, n_iter):
         crosslinks.append(n_crosslinks)
         coal_rxn.append(n_coal_rxn)
         heat_rxn.append(mol_heat_rxn)
+        temps.append(T)
 
     # Return the output variables:
 
-    return state_list, crosslinks, coal_rxn, heat_rxn
+    return state_list, temps, crosslinks, coal_rxn, heat_rxn
