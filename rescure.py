@@ -561,3 +561,6 @@ def resin_cure_simulation(n, ratio, T, n_iter):
     # Return the output variables:
 
     return state_list, temps, crosslinks, coal_rxn, heat_rxn
+
+# Still need to export both the inital number of empty spaces, phenol,
+# and coal particles, as well as the final number of each respectively.
