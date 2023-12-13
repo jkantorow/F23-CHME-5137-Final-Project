@@ -110,13 +110,13 @@ def get_rates_phenol(state, pos, T):
     # Define rxn rate constants
     # (simplified for now):
 
-    kpp = 0.8 * T
+    kpp = 0.8 * T # Use Jessica's rate functions!
     kpc = 0.2 * T
 
     # Define the KMC rates of each event (weighted by
     # the number of peripheral molecules of each type):
 
-    r_kmc_pp = (kpp - (kpc * 0.2)) * (n_phenol)
+    r_kmc_pp = (kpp - (kpc * 0.2)) * (n_phenol) # To be changed!
     r_kmc_pc = (kpc - (kpp * 0.2)) * (n_coal)
     r_kmc_no_rxn = (0 if (r_kmc_pp or r_kmc_pc) else 1)
 
@@ -353,7 +353,7 @@ def get_new_state(current_state, T):
 
     # Heat of reaction of this iteration of the system:
 
-    mol_heat_rxn = 0
+    mol_heat_rxn = 0 # Jessica has a function for this!
 
     for coords in all_mols:
 
@@ -447,7 +447,7 @@ def get_new_state(current_state, T):
 
             new_state[periph_pos[random_coal_choice]] = 4
 
-            # Update the number of coal particles that reacted
+            # Update the number of coal particles that reacted:
 
             n_coal_rxn += 1
             mol_heat_rxn += 0.00015 # This is a placeholder value
@@ -492,6 +492,8 @@ def get_new_state(current_state, T):
     # Update the temperature of the system:
 
     T += mol_heat_rxn / (m * heat_capacity)
+
+    # Jessica has a reaction to accurately define this!
 
     # Return the new state of the system and the desired
     # output variables:
@@ -559,3 +561,6 @@ def resin_cure_simulation(n, ratio, T, n_iter):
     # Return the output variables:
 
     return state_list, temps, crosslinks, coal_rxn, heat_rxn
+
+# Still need to export both the inital number of empty spaces, phenol,
+# and coal particles, as well as the final number of each respectively.
