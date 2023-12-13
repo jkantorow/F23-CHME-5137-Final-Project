@@ -528,6 +528,15 @@ def resin_cure_simulation(n, ratio, T, n_iter):
 
     state = initial_random_matrix(n, ratio)
 
+    # Quantify the initial number of phenol, coal, and
+    # void molecules:
+
+    n_phenol = np.count_nonzero(state == 1)
+    n_coal = np.count_nonzero(state == 2)
+    n_void = np.count_nonzero(state == 0)
+
+    init_mols = np.array([n_void, n_phenol, n_coal])
+
     # Initialize the output variables:
 
     state_list = [state]
@@ -558,9 +567,22 @@ def resin_cure_simulation(n, ratio, T, n_iter):
         heat_rxn.append(mol_heat_rxn)
         temps.append(T)
 
+    # Quantify the final number of phenol, coal, void,
+    # and crosslinked phenol and coal molecules:
+
+    n_phenol_final = np.count_nonzero(state == 1)
+    n_coal_final = np.count_nonzero(state == 2)
+    n_cross_rxn_final = np.count_nonzero(state == 3)
+    n_coal_rxn_final = np.count_nonzero(state == 4)
+    n_void_final = np.count_nonzero(state == 0)
+
+    final_mols = np.array([n_void_final, n_phenol_final, n_coal_final,
+                           n_cross_rxn_final, n_coal_rxn_final])
+
+
     # Return the output variables:
 
-    return state_list, temps, crosslinks, coal_rxn, heat_rxn
+    return state_list, temps, crosslinks, coal_rxn, heat_rxn, init_mols, final_mols
 
 # Still need to export both the inital number of empty spaces, phenol,
 # and coal particles, as well as the final number of each respectively.
