@@ -450,3 +450,62 @@ def get_new_state(current_state, T):
     # output variables:
 
     return new_state, n_crosslinks, n_coal_rxn, mol_heat_rxn
+
+# Now we need to wrap the get_new_state function in a
+# function that will run the simulation for a given
+# number of system state iterations:
+
+def resin_cure_simulation(n, ratio, T, n_iter):
+
+    """
+    A function that runs the simulation for a given
+    number of system state iterations.
+
+    n       : int - the size of the system in the x
+            : and y dimensions.
+
+    ratio   : list - the ratio of voids to phenol to
+            : coal in the system at time 0.
+
+    T       : float - the temperature of the system.
+
+    n_iter  : int - the number of iterations of the
+            : system state.
+
+    """
+
+    # Generate the initial state of the system:
+
+    state = initial_random_matrix(n, ratio)
+
+    # Initialize the output variables:
+
+    state_list = [state]
+
+    crosslinks = []
+    coal_rxn = []
+    heat_rxn = []
+
+    # Run the simulation for the desired number of
+    # iterations:
+
+    for i in range(n_iter):
+
+        # Calculate the new state of the system:
+
+        new_state, n_crosslinks, n_coal_rxn, mol_heat_rxn = get_new_state(state, T)
+
+        # Update the state of the system:
+
+        state_list.append(new_state)
+        state = new_state
+
+        # Append the output variables:
+
+        crosslinks.append(n_crosslinks)
+        coal_rxn.append(n_coal_rxn)
+        heat_rxn.append(mol_heat_rxn)
+
+    # Return the output variables:
+
+    return state_list, crosslinks, coal_rxn, heat_rxn
