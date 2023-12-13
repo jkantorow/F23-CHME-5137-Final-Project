@@ -280,6 +280,11 @@ def get_new_state(current_state, T):
 
     sim_size = current_state.shape[0]
 
+    # Create a copy of the current state to be used
+    # as a blank canvas for the new state:
+
+    new_state = np.copy(current_state)
+
     # Find non-void positions in the current state
     # that are not around the edges of the system:
 
@@ -289,11 +294,159 @@ def get_new_state(current_state, T):
     phenol_pos = list(zip(phenol_pos[0], phenol_pos[1]))
     coal_pos = list(zip(coal_pos[0], coal_pos[1]))
 
-    # Only consider the non-void positions that are
+    # Only consider the molecular positions that are
     # not around the edges of the system:
 
     phenol_pos = [pos for pos in phenol_pos if pos[0] != 0 and pos[0] != sim_size-1 and pos[1] != 0 and pos[1] != sim_size-1]
     coal_pos = [pos for pos in coal_pos if pos[0] != 0 and pos[0] != sim_size-1 and pos[1] != 0 and pos[1] != sim_size-1]
 
-    # For each non-void position, calculate the rates
+    # For each molecular position, calculate the rates
     # and choose event that occurs:
+
+    all_mols = phenol_pos + coal_pos
+
+    # What are we extracting after the new state is calculated?
+    # We need to extract the final heat of reaction from summing
+    # all of the reactions that occur in the system (phenol to
+    # phenol, and phenol to coal), how many coal particles reacted
+    # with phenol, and the degree of crosslinking
+    # in the system (number of crosslinked phenol molecules). We
+    # will need to set these variables up here:
+
+    # Number of crosslinks occuring in this iteration of the system:
+
+    n_crosslinks = 0
+
+    # Number of coal particles that reacted with phenol in this
+    # iteration of the system:
+
+    n_coal_rxn = 0
+
+    # Heat of reaction of this iteration of the system:
+
+    mol_heat_rxn = 0
+
+    for coords in all_mols:
+
+        # Technically, this would overwrite some of the changes made
+        # previously to the new state if a molecule is in the same
+        # 3x3 matrix as another molecule since the frame of reference
+        # can overlap, but we may not have time to change this.
+
+        # Get the rates of each event occuring (since the get_rates
+        # functions output the rates and the peripheral positions, 
+        # we need to save both data separately):
+
+        if current_state[coords] == 1:
+
+            all_rate_data = get_rates_phenol(current_state, coords, T)
+            rates = all_rate_data[0:11]
+            periph_pos, periph_ident = all_rate_data[12], all_rate_data[13]
+
+        elif current_state[coords] == 2:
+
+            all_rate_data = get_rates_coal(current_state, coords, T)
+            rates = all_rate_data[0:10]
+            periph_pos, periph_ident = all_rate_data[11], all_rate_data[12]
+
+        else:
+
+            # If the current state is not a phenol or coal (i.e. it
+            # has crosslinked or reacted with coal), then we do not
+            # need to calculate the rates of the events occuring:
+
+            continue
+
+        # Choose the event that occurs:
+
+        event = choose_event(rates)
+
+        # Update the new state based on the event that
+        # occurs:
+
+        if event == "pp_rxn":
+
+            # Phenol molecule becomes a 3 to represent that 
+            # it has crosslinked:
+
+            new_state[coords] = 3
+
+            # However, the molecule which it reacted with also
+            # has to become a 3 since both molecules crosslinked.
+            # Additionally, since any of the peripheral phenol
+            # molecules (if multiple exist) could have reacted
+            # with an equal probability, we need to randomly
+            # determine which peripheral phenol molecule reacted
+            # and update that new molecule to a 3 as well:
+
+            periph_phenol_index = np.where(np.array(periph_ident) == 1)[0]
+
+            # Randomly choose a peripheral phenol molecule:
+
+            random_phenol_choice = rand.choice(periph_phenol_index)
+
+            # Update the new state:
+
+            new_state[periph_pos[random_phenol_choice]] = 3
+
+            # Update the number of crosslinks and the heat of
+            # reaction:
+
+            n_crosslinks += 1
+            mol_heat_rxn += 0.00043 # This is a placeholder value
+
+        elif event == "pc_rxn":
+
+            # Phenol molecule becomes a 4 to represent that
+            # it has reacted with coal:
+
+            new_state[coords] = 4
+
+            # Find peripheral coal molecules:
+
+            periph_coal_index = np.where(np.array(periph_ident) == 2)[0]
+
+            # Randomly choose a peripheral coal molecule:
+
+            random_coal_choice = rand.choice(periph_coal_index)
+
+            # Update the new state:
+
+            new_state[periph_pos[random_coal_choice]] = 4
+
+            # Update the number of coal particles that reacted
+
+            n_coal_rxn += 1
+            mol_heat_rxn += 0.00015 # This is a placeholder value
+
+        elif event == "no_rxn":
+            pass
+        elif event == "move_ul":
+            new_state[coords] = 0
+            new_state[periph_pos[0]] = current_state[coords]
+        elif event == "move_u":
+            new_state[coords] = 0
+            new_state[periph_pos[1]] = current_state[coords]
+        elif event == "move_ur":
+            new_state[coords] = 0
+            new_state[periph_pos[2]] = current_state[coords]
+        elif event == "move_l":
+            new_state[coords] = 0
+            new_state[periph_pos[3]] = current_state[coords]
+        elif event == "move_r":
+            new_state[coords] = 0
+            new_state[periph_pos[4]] = current_state[coords]
+        elif event == "move_dl":
+            new_state[coords] = 0
+            new_state[periph_pos[5]] = current_state[coords]
+        elif event == "move_d":
+            new_state[coords] = 0
+            new_state[periph_pos[6]] = current_state[coords]
+        elif event == "move_dr":
+            new_state[coords] = 0
+            new_state[periph_pos[7]] = current_state[coords]
+    
+    # Return the new state of the system and the desired
+    # output variables:
+
+    return new_state, n_crosslinks, n_coal_rxn, mol_heat_rxn
