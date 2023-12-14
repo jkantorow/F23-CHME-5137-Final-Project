@@ -348,11 +348,17 @@ def Hrxn_pc(n_molcoal):
 
 def temp_vs_hrxn(Hrxn):
 
-    L_all = 75.07308183216142
-    k_all = 0.24549951294321715
-    x0_all = 153.05731157934324
+    if Hrxn <= 0:
 
-    return (np.log(L_all/Hrxn - 1)/(-k_all)) + x0_all
+        return 0
+    
+    else:
+
+        L_all = 75.07308183216142
+        k_all = 0.24549951294321715
+        x0_all = 153.05731157934324
+
+        return (np.log(L_all/Hrxn - 1)/(-k_all)) + x0_all
 
 # Here is a function that calculates the new 
 # state of the system:
