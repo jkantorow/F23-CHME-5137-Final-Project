@@ -154,7 +154,7 @@ def get_rates_phenol(state, pos, T):
     # Define the KMC rates of each movement event:
 
     if r_kmc_pp or r_kmc_pc:
-        move_prob = 1 / ((kpp + kpc) * (n_phenol + n_coal))
+        move_prob = 1 / 10
     else:
         move_prob = 1
 
@@ -225,7 +225,7 @@ def get_rates_coal(state, pos, T):
     # Define the KMC rates of each movement event:
 
     if r_kmc_cp:
-        move_prob = 1 / (kcp * n_coal)
+        move_prob = 1 / 10
     else:
         move_prob = 1
 
