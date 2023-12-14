@@ -329,7 +329,7 @@ def Hrxn_pp(n_molphen):
     Hrxn_pp = Hrxn_total_100p/Na # J/ph_mol
     n_phenol = n_molphen * Na
 
-    return Hrxn_pp * n_phenol
+    return Hrxn_pp * n_phenol * 10**-6
 
 # Here is the function for a phenol - coal reaction:
 
@@ -340,7 +340,7 @@ def Hrxn_pc(n_molcoal):
     Hrxn_pc = Hrxn_total_60p/Na # J/coal_mol
     n_coal = n_molcoal * Na
 
-    return Hrxn_pc * n_coal
+    return Hrxn_pc * n_coal * 10**-6
 
 # Here is the function to calculate the system's new
 # temperature after each iteration based on the heat
