@@ -288,9 +288,44 @@ def choose_event(rates, mol_type):
 
         raise("Invalid molecule type in choose_event function.")
 
-# Adam's rate calculator still needs to be updated
-# but is our best bet at the moment. Here is a fucntion
-# that calculates the new state of the system:
+# We need a function to output the heat of reaction
+# of the system after each iteration based on 
+# Jessica's experimental data:
+
+# Here is the function for a phenol - phenol reaction:
+
+def Hrxn_pp(n_molphen):
+
+    Na = 6.022e23 # Avogadro's number
+    Hrxn_total_100p = 31620 # Total Heat of reaction (100% phenolic) J/mol (from DSC)
+    Hrxn_pp = Hrxn_total_100p/Na # J/ph_mol
+    n_phenol = n_molphen * Na
+
+    return Hrxn_pp * n_phenol
+
+# Here is the function for a phenol - coal reaction:
+
+def Hrxn_pc(n_molcoal):
+
+    Na = 6.022e23 # Avogadro's number
+    Hrxn_total_60p = 23406 # Total Heat of reaction (60% phenolic-coal mix) J/mol (from DSC)
+    Hrxn_pc = Hrxn_total_60p/Na # J/coal_mol
+    n_coal = n_molcoal * Na
+
+    return Hrxn_pc * n_coal
+
+# Here is the function to calculate the system's new
+# temperature after each iteration based on the heat
+# of reaction from Jessica's experimental data:
+
+def temp_vs_hrxn(Hrxn):
+    L_all = 75.07308183216142
+    k_all = 0.24549951294321715
+    x0_all = 153.05731157934324
+    return (np.log(L_all/Hrxn - 1)/(-k_all)) + x0_all
+
+# Here is a function that calculates the new 
+# state of the system:
 
 def get_new_state(current_state, T):
     
@@ -423,10 +458,10 @@ def get_new_state(current_state, T):
             new_state[periph_pos[random_phenol_choice]] = 3
 
             # Update the number of crosslinks and the heat of
-            # reaction:
+            # reaction (this will be used in the function to 
+            # calculate the heat of reaction of the system):
 
             n_crosslinks += 1
-            mol_heat_rxn += 0.00043 # This is a placeholder value
 
         elif event == "pc_rxn":
 
@@ -450,7 +485,6 @@ def get_new_state(current_state, T):
             # Update the number of coal particles that reacted:
 
             n_coal_rxn += 1
-            mol_heat_rxn += 0.00015 # This is a placeholder value
 
         elif event == "no_rxn":
             pass
@@ -479,19 +513,17 @@ def get_new_state(current_state, T):
             new_state[coords] = 0
             new_state[periph_pos[7]] = current_state[coords]
     
-    # We need to update the resulting temperature of the system
-    # based on the output heat of reaction:
-    # Assume: delta H = m * c * (T_final - T_initial)
-    # So: T_final = T_initial + (delta H / (m * c))
-    
-    # Assume a constant heat capacity of resin and coal:
+    # Calculate the heat of reaction of the system from the
+    # contributions of phenol - phenol and phenol - coal:
+            
+    h_rxn_phenol = Hrxn_pp(n_crosslinks)
+    h_rxn_coal = Hrxn_pc(n_coal_rxn)
 
-    heat_capacity = 1 # This is a placeholder value
-    m = 1 # This is a placeholder value
+    mol_heat_rxn = h_rxn_phenol + h_rxn_coal
 
     # Update the temperature of the system:
 
-    T += mol_heat_rxn / (m * heat_capacity)
+    T += temp_vs_hrxn(mol_heat_rxn)
 
     # Jessica has a reaction to accurately define this!
 
@@ -541,9 +573,9 @@ def resin_cure_simulation(n, ratio, T, n_iter):
 
     state_list = [state]
 
-    crosslinks = []
-    coal_rxn = []
-    heat_rxn = []
+    crosslinks = [0]
+    coal_rxn = [0]
+    heat_rxn = [0]
     temps = [T]
 
     # Run the simulation for the desired number of
