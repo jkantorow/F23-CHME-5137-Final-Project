@@ -329,7 +329,7 @@ def Hrxn_pp(n_molphen):
     Hrxn_pp = Hrxn_total_100p/Na # J/ph_mol
     n_phenol = n_molphen * Na
 
-    return Hrxn_pp * n_phenol * 10**-6
+    return Hrxn_pp * n_phenol
 
 # Here is the function for a phenol - coal reaction:
 
@@ -340,13 +340,13 @@ def Hrxn_pc(n_molcoal):
     Hrxn_pc = Hrxn_total_60p/Na # J/coal_mol
     n_coal = n_molcoal * Na
 
-    return Hrxn_pc * n_coal * 10**-6
+    return Hrxn_pc * n_coal
 
 # Here is the function to calculate the system's new
 # temperature after each iteration based on the heat
 # of reaction from Jessica's experimental data:
 
-def temp_vs_hrxn(Hrxn):
+def temp_vs_hrxn(Hrxn, n_mol):
 
     if Hrxn <= 0:
 
@@ -358,7 +358,7 @@ def temp_vs_hrxn(Hrxn):
         k_all = 0.24549951294321715
         x0_all = 153.05731157934324
 
-        return ((np.log(L_all/Hrxn - 1)/(-k_all)) + x0_all) * 0.1
+        return ((np.log(L_all/(Hrxn*600*n_mol) - 1)/(-k_all)) + x0_all) * 0.1
 
 # Here is a function that calculates the new 
 # state of the system:
@@ -560,7 +560,9 @@ def get_new_state(current_state, T):
 
     # Update the temperature of the system:
 
-    T += temp_vs_hrxn(mol_heat_rxn)
+    n_rxns = n_crosslinks + n_coal_rxn
+
+    T += temp_vs_hrxn(mol_heat_rxn, n_rxns)
 
     # Jessica has a reaction to accurately define this!
 
