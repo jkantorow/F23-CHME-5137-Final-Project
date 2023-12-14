@@ -140,8 +140,8 @@ def get_rates_phenol(state, pos, T):
     # Define the KMC rates of each event (weighted by
     # the number of peripheral molecules of each type):
 
-    r_kmc_pp = kpp * (n_phenol)
-    r_kmc_pc = kpc * (n_coal)
+    r_kmc_pp = kpp * (n_phenol) * 10**6
+    r_kmc_pc = kpc * (n_coal) * 10**6
 
     # If the rate of pp or pc reaction is non-zero
     # then the rate of no reaction is negligible:
@@ -216,7 +216,7 @@ def get_rates_coal(state, pos, T):
     # Define the KMC rates of each event (weighted by
     # the number of peripheral molecules of each type):
 
-    r_kmc_cp = kcp * (n_coal)
+    r_kmc_cp = kcp * (n_coal) * 10**6
     r_kmc_no_rxn = (0 if kcp else 1)
 
     if r_kmc_no_rxn < 0:
