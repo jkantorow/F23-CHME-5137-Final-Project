@@ -74,6 +74,30 @@ def initial_random_matrix(n, ratio):
 # Here is adam's code for the rate calculation
 # and a wrapper for the actual KMC simulation:
 
+# Function for calculating k_pp:
+
+def calculate_kpp(Temp):
+
+    # Constants
+    Ea_pp = 106000 # Activation Energy_phenol-phenol rxn, J/mol 
+    A_pp = 21466666666.666668  # Pre-exponential Factor_phenol-phenol rxn (1/s)
+    R = 8.314 # Universal Gas Constant, J/mol.k
+    kpp = A_pp * np.exp(-Ea_pp/(R*Temp))
+
+    return kpp 
+
+# Function for calculating k_pc:
+
+def calculate_kpc(Temp):
+
+    # Constants
+    Ea_pc = 142000 # Activation Energy_coal-phenol rxn, J/mol 
+    A_pc = 18000000000  # Pre-exponential Factor_coal-phenol rxn (1/s)
+    R = 8.314 # Universal Gas Constant, J/mol.k
+    kpc = A_pc * np.exp(-Ea_pc/(R*Temp))
+
+    return kpc
+
 def get_rates_phenol(state, pos, T):
 
     # Define the mol type:
@@ -110,14 +134,18 @@ def get_rates_phenol(state, pos, T):
     # Define rxn rate constants
     # (simplified for now):
 
-    kpp = 0.8 * T # Use Jessica's rate functions!
-    kpc = 0.2 * T
+    kpp = calculate_kpp(T)
+    kpc = calculate_kpc(T)
 
     # Define the KMC rates of each event (weighted by
     # the number of peripheral molecules of each type):
 
-    r_kmc_pp = (kpp - (kpc * 0.2)) * (n_phenol) # To be changed!
-    r_kmc_pc = (kpc - (kpp * 0.2)) * (n_coal)
+    r_kmc_pp = kpp * (n_phenol)
+    r_kmc_pc = kpc * (n_coal)
+
+    # If the rate of pp or pc reaction is non-zero
+    # then the rate of no reaction is negligible:
+
     r_kmc_no_rxn = (0 if (r_kmc_pp or r_kmc_pc) else 1)
 
     if r_kmc_no_rxn < 0:
@@ -126,7 +154,7 @@ def get_rates_phenol(state, pos, T):
     # Define the KMC rates of each movement event:
 
     if r_kmc_pp or r_kmc_pc:
-        move_prob = 1 / (n_phenol + n_coal)
+        move_prob = 1 / ((kpp + kpc) * (n_phenol + n_coal))
     else:
         move_prob = 1
 
@@ -183,7 +211,7 @@ def get_rates_coal(state, pos, T):
     # coal cannot react with itself, so we only need
     # to define the rate of coal reacting with phenol:
 
-    kcp = 0.2 * T # Again we need to change this
+    kcp = calculate_kpc(T)
 
     # Define the KMC rates of each event (weighted by
     # the number of peripheral molecules of each type):
@@ -197,7 +225,7 @@ def get_rates_coal(state, pos, T):
     # Define the KMC rates of each movement event:
 
     if r_kmc_cp:
-        move_prob = 1 / (n_phenol + n_coal)
+        move_prob = 1 / (kcp * n_coal)
     else:
         move_prob = 1
 
@@ -319,9 +347,11 @@ def Hrxn_pc(n_molcoal):
 # of reaction from Jessica's experimental data:
 
 def temp_vs_hrxn(Hrxn):
+
     L_all = 75.07308183216142
     k_all = 0.24549951294321715
     x0_all = 153.05731157934324
+
     return (np.log(L_all/Hrxn - 1)/(-k_all)) + x0_all
 
 # Here is a function that calculates the new 
@@ -465,10 +495,10 @@ def get_new_state(current_state, T):
 
         elif event == "pc_rxn":
 
-            # Phenol molecule becomes a 4 to represent that
+            # Phenol molecule becomes a 3 to represent that
             # it has reacted with coal:
 
-            new_state[coords] = 4
+            new_state[coords] = 3
 
             # Find peripheral coal molecules:
 
@@ -478,7 +508,8 @@ def get_new_state(current_state, T):
 
             random_coal_choice = rand.choice(periph_coal_index)
 
-            # Update the new state:
+            # Update the new state (4 to represent that it is
+            # crosslinked with phenol):
 
             new_state[periph_pos[random_coal_choice]] = 4
 
@@ -615,6 +646,3 @@ def resin_cure_simulation(n, ratio, T, n_iter):
     # Return the output variables:
 
     return state_list, temps, crosslinks, coal_rxn, heat_rxn, init_mols, final_mols
-
-# Still need to export both the inital number of empty spaces, phenol,
-# and coal particles, as well as the final number of each respectively.
