@@ -358,7 +358,7 @@ def temp_vs_hrxn(Hrxn):
         k_all = 0.24549951294321715
         x0_all = 153.05731157934324
 
-        return (np.log(L_all/Hrxn - 1)/(-k_all)) + x0_all
+        return ((np.log(L_all/Hrxn - 1)/(-k_all)) + x0_all) * 0.1
 
 # Here is a function that calculates the new 
 # state of the system:
